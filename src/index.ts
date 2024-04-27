@@ -1,8 +1,13 @@
 import { Elysia } from "elysia";
 import { exists, unlink } from "fs/promises";
+import { homedir } from "os";
+import { join } from "path";
 
-const path = "/Users/tomdurrant/Documents/FOYER";
-let confirmed = false;
+const path = join(homedir(), "Documents", "FOYER");
+let confirmed = {
+  shutdown: false,
+  delete: false,
+};
 
 const app = new Elysia()
   .state({ confirmed: false })
@@ -17,20 +22,33 @@ const app = new Elysia()
     ]);
     return { message: "Reopened OBS at Recorded" };
   })
+  .get("/stop", () => {
+    Bun.spawn(["killall", "OBS"]);
+    return { message: "Stopped OBS" };
+  })
+  .get("/shutdown", () => {
+    if (!confirmed.shutdown) {
+      confirmed.shutdown = true;
+      return { message: "Press again to shutdown" };
+    }
+    confirmed.shutdown = false;
+    Bun.spawn(["shutdown", "now"]);
+    return { message: "Shutting down" };
+  })
   .get("/delete", async () => {
     if (!(await exists(`${path}.mkv`))) {
       return {
         message: "File not found",
       };
     }
-    if (!confirmed) {
-      confirmed = true;
+    if (!confirmed.delete) {
+      confirmed.delete = true;
       return { message: "Press again to delete" };
     }
     if (confirmed) {
       await unlink(`${path}.mkv`);
       await unlink(`${path}.mp4`);
-      confirmed = false;
+      confirmed.delete = false;
       return { message: "Deleted" };
     }
     return {
@@ -44,5 +62,5 @@ const app = new Elysia()
   });
 
 console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
+  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
