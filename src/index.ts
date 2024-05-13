@@ -46,10 +46,15 @@ const app = new Elysia()
       return { message: "Press again to delete" };
     }
     if (confirmed) {
-      await unlink(`${path}.mkv`);
-      await unlink(`${path}.mp4`);
-      confirmed.delete = false;
-      return { message: "Deleted" };
+      try {
+        await unlink(`${path}.mkv`);
+        await unlink(`${path}.mp4`);
+        confirmed.delete = false;
+        return { message: "Deleted" };
+      } catch (error) {
+        console.log("Error deleting file", error);
+        return { message: "Error" };
+      }
     }
     return {
       message: "Error",
@@ -62,5 +67,5 @@ const app = new Elysia()
   });
 
 console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
 );
